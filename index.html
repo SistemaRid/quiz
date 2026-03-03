@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Timer Challenge</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+    .app-wrapper { height: 100%; width: 100%; display: flex; flex-direction: column; }
+    
+    .font-fredoka { font-family: 'Fredoka', sans-serif; }
+    .font-poppins { font-family: 'Poppins', sans-serif; }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px currentColor; }
+      50% { box-shadow: 0 0 40px currentColor, 0 0 60px currentColor; }
+    }
+    
+    @keyframes bounce-in {
+      0% { transform: scale(0.3); opacity: 0; }
+      50% { transform: scale(1.05); }
+      70% { transform: scale(0.9); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes slide-up {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    
+    .animate-bounce-in { animation: bounce-in 0.6s ease-out; }
+    .animate-slide-up { animation: slide-up 0.5s ease-out; }
+    .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+    
+    .shimmer-btn {
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+    }
+    
+    .timer-ring {
+      transition: stroke-dashoffset 0.5s linear, stroke 0.5s ease;
+    }
+    
+    .option-btn {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .option-btn:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.02);
+    }
+    
+    .option-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    
+    .girls-theme {
+      background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 30%, #f48fb1 70%, #ec407a 100%);
+    }
+    
+    .boys-theme {
+      background: linear-gradient(135deg, #e3f2fd 0%, #90caf9 30%, #42a5f5 70%, #1565c0 100%);
+    }
+    
+    .home-theme {
+      background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #9333ea 100%);
+    }
+    
+    .correct-answer {
+      background: linear-gradient(135deg, #4ade80, #22c55e) !important;
+      border-color: #16a34a !important;
+      color: white !important;
+    }
+    
+    .wrong-answer {
+      background: linear-gradient(135deg, #f87171, #ef4444) !important;
+      border-color: #dc2626 !important;
+      color: white !important;
+    }
+    
+    .progress-bar {
+      transition: width 0.3s ease;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .text-4xl { font-size: 1.875rem; }
+      .text-6xl { font-size: 2.5rem; }
+      .text-3xl { font-size: 1.5rem; }
+      .text-2xl { font-size: 1.25rem; }
+      .gap-3 { gap: 0.5rem; }
+      .p-6 { padding: 1rem; }
+      .px-6 { padding-left: 1rem; padding-right: 1rem; }
+      .py-4 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+      .gap-4 { gap: 0.75rem; }
+      .mb-6 { margin-bottom: 1rem; }
+      .mb-4 { margin-bottom: 0.75rem; }
+    }
+
+    @media (max-width: 640px) {
+      .max-w-2xl { max-width: 100%; }
+      .max-w-md { max-width: 100%; }
+      .w-32 { width: 120px; }
+      .h-32 { height: 120px; }
+      .w-20 { width: 60px; }
+      .md\:w-24 { width: 60px; }
+      .gap-8 { gap: 1rem; }
+      .text-lg { font-size: 0.875rem; }
+      .text-xl { font-size: 1rem; }
+      .grid-cols-2 { grid-template-columns: 1fr; }
+      .grid-cols-1 { grid-template-columns: 1fr; }
+    }
+    @keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2.2s ease-in-out infinite;
+}
+
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full overflow-auto">
+  <div id="app" class="app-wrapper font-poppins">
+   <!-- Home Screen -->
+   <div id="home-screen" class="min-h-full w-full home-theme flex flex-col items-center justify-center p-4">
+    <div class="mt-10 mb-0"><!-- Substitua a src abaixo pelo caminho da sua imagem PNG --> <img id="ribbon-image" src="logo.png" alt="Fita de conscientização" class="w-72 md:w-96 mx-auto animate-bounce-slow object-contain" loading="lazy" onerror="console.error('Image failed to load:', this.src); this.style.background='linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #9333ea 100%)'; this.alt='Imagem da fita';">
+    </div>
+    <div class="animate-bounce-in text-center mb-8">
+     <h1 id="main-title" class="font-fredoka text-4xl md:text-6xl font-bold text-white drop-shadow-lg mb-2">🎯 Quiz Março Lilas</h1>
+    </div>
+    <div class="w-full max-w-md space-y-4 animate-slide-up">
+     <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-6 mb-6">
+      <label class="block text-white font-semibold mb-2 text-lg">Seu Nome:</label> <input type="text" id="player-name" placeholder="Digite seu nome..." class="w-full px-4 py-3 rounded-xl border-2 border-white/30 bg-white/90 text-gray-800 font-medium placeholder-gray-400 focus:outline-none focus:border-white focus:ring-2 focus:ring-white/50 transition-all">
+     </div><button id="girls-btn" onclick="startQuiz('girls')" class="w-full py-4 px-6 rounded-2xl font-bold text-xl text-white bg-gradient-to-r from-pink-400 to-pink-600 hover:from-pink-500 hover:to-pink-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3"> <span class="text-2xl">👧</span> <span id="girls-btn-text">Para Meninas</span> <span class="text-2xl">💖</span> </button> <button id="boys-btn" onclick="startQuiz('boys')" class="w-full py-4 px-6 rounded-2xl font-bold text-xl text-white bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3"> <span class="text-2xl">👦</span> <span id="boys-btn-text">Para Meninos</span> <span class="text-2xl">⚡</span> </button> <button onclick="showMetrics()" class="w-full py-3 px-6 rounded-2xl font-semibold text-lg text-white/90 bg-white/20 hover:bg-white/30 backdrop-blur-sm border-2 border-white/30 hover:border-white/50 transition-all duration-300 flex items-center justify-center gap-2"> <span class="text-xl">📊</span> <span>Ver Métricas</span> </button>
+    </div><!-- Firebase Config Placeholder -->
+    <script>
+        // ========================================
+        // 🔥 FIREBASE CONFIGURATION
+        // Substitua os valores abaixo com suas credenciais do Firebase
+        // ========================================
+
+        
+        // Descomente as linhas abaixo após adicionar o SDK do Firebase
+        // import { initializeApp } from "firebase/app";
+        // const app = initializeApp(firebaseConfig);
+        // ========================================
+      </script>
+   </div><!-- Quiz Screen -->
+   <div id="quiz-screen" class="min-h-full w-full flex flex-col items-center p-4 hidden">
+    <div class="w-full max-w-2xl">
+     <!-- Header -->
+     <div class="flex items-center justify-between mb-4">
+      <button onclick="goHome()" class="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+       </svg></button>
+      <div id="question-counter" class="text-white font-bold text-lg bg-white/20 px-4 py-2 rounded-full">
+       1 / 8
+      </div>
+      <div id="score-display" class="hidden text-white font-bold text-lg bg-white/20 px-4 py-2 rounded-full">
+       ✓ 0 | ✗ 0
+      </div>
+     </div><!-- Timer -->
+     <div class="flex justify-center mb-6">
+      <div class="relative">
+       <svg class="w-32 h-32 md:w-40 md:h-40 transform -rotate-90" viewbox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.2)" stroke-width="8" fill="none" /> <circle id="timer-ring" cx="50" cy="50" r="45" stroke="#4ade80" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="0" class="timer-ring" />
+       </svg>
+       <div class="absolute inset-0 flex items-center justify-center">
+        <span id="timer-text" class="text-4xl md:text-5xl font-bold text-white font-fredoka">15</span>
+       </div>
+      </div>
+     </div><!-- Progress Bar -->
+     <div class="w-full h-2 bg-white/20 rounded-full mb-6 overflow-hidden">
+      <div id="progress-bar" class="h-full bg-white/60 rounded-full progress-bar" style="width: 0%"></div>
+     </div><!-- Question -->
+     <div class="bg-white/20 backdrop-blur-sm rounded-3xl p-6 mb-6 animate-slide-up">
+      <h2 id="question-text" class="text-xl md:text-2xl font-bold text-white text-center leading-relaxed">Pergunta aqui</h2>
+     </div><!-- Options -->
+     <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <!-- Options will be inserted here -->
+     </div>
+    </div>
+   </div><!-- Results Screen -->
+   <div id="results-screen" class="min-h-full w-full flex flex-col items-center justify-center p-4 hidden">
+    <div class="w-full max-w-md animate-bounce-in">
+     <div class="bg-white/20 backdrop-blur-sm rounded-3xl p-8 text-center">
+      <div id="result-emoji" class="text-7xl mb-4">
+       🏆
+      </div>
+      <h2 id="result-title" class="font-fredoka text-3xl md:text-4xl font-bold text-white mb-2">Parabéns!</h2>
+      <p id="result-name" class="text-white/80 text-lg mb-6"></p>
+     <div class="hidden grid grid-cols-2 gap-4 mb-6">
+       <div class="bg-green-500/30 rounded-2xl p-4">
+        <div class="text-3xl font-bold text-green-300" id="result-correct">
+         0
+        </div>
+        <div class="text-green-200 text-sm">
+         Acertos
+        </div>
+       </div>
+       <div class="bg-red-500/30 rounded-2xl p-4">
+        <div class="text-3xl font-bold text-red-300" id="result-wrong">
+         0
+        </div>
+        <div class="text-red-200 text-sm">
+         Erros
+        </div>
+       </div>
+      </div>
+      <div class="hidden bg-white/10 rounded-2xl p-4 mb-6">
+       <div class="text-2xl font-bold text-white" id="result-percentage">
+        0%
+       </div>
+       <div class="text-white/70 text-sm">
+        Taxa de Acerto
+       </div>
+      </div>
+      <div class="hidden bg-white/10 rounded-2xl p-4 mb-6">
+       <div class="text-xl font-bold text-white" id="result-time">
+        0s
+       </div>
+       <div class="text-white/70 text-sm">
+        Tempo Utilizado
+       </div>
+      </div><button onclick="goHome()" class="w-full py-4 px-6 rounded-2xl font-bold text-xl text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg transition-all duration-300"> 🏠 Voltar ao Início </button>
+     </div>
+    </div>
+   </div><!-- Metrics Screen -->
+   <div id="metrics-screen" class="min-h-full w-full home-theme flex flex-col items-center p-4 hidden overflow-auto">
+    <div class="w-full max-w-2xl py-8">
+     <div class="flex items-center justify-between mb-6">
+      <button onclick="goHome()" class="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+       </svg></button>
+      <h2 class="font-fredoka text-2xl md:text-3xl font-bold text-white">📊 Métricas</h2>
+      <div class="w-10"></div>
+     </div><!-- Comparison Chart -->
+     <div class="bg-white/20 backdrop-blur-sm rounded-3xl p-6 mb-6 animate-slide-up">
+      <h3 class="text-white font-bold text-xl mb-4 text-center">Comparação Geral</h3>
+      <div class="flex items-end justify-center gap-8 h-48 mb-4">
+       <!-- Girls Bar -->
+       <div class="flex flex-col items-center">
+        <div class="text-2xl mb-2" id="girls-percentage">
+         0%
+        </div>
+        <div id="girls-bar" class="w-20 md:w-24 bg-gradient-to-t from-pink-500 to-pink-300 rounded-t-xl transition-all duration-1000" style="height: 10px;"></div>
+        <div class="text-white mt-2 font-semibold">
+         👧 Meninas
+        </div>
+        <div class="text-white/70 text-sm" id="girls-count">
+         0 participantes
+        </div>
+       </div><!-- Boys Bar -->
+       <div class="flex flex-col items-center">
+        <div class="text-2xl mb-2" id="boys-percentage">
+         0%
+        </div>
+        <div id="boys-bar" class="w-20 md:w-24 bg-gradient-to-t from-blue-500 to-blue-300 rounded-t-xl transition-all duration-1000" style="height: 10px;"></div>
+        <div class="text-white mt-2 font-semibold">
+         👦 Meninos
+        </div>
+        <div class="text-white/70 text-sm" id="boys-count">
+         0 participantes
+        </div>
+       </div>
+      </div>
+     </div><!-- Detailed Stats -->
+     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="bg-pink-500/30 backdrop-blur-sm rounded-2xl p-5">
+       <h4 class="text-white font-bold text-lg mb-3 flex items-center gap-2"><span>👧</span> Estatísticas Meninas</h4>
+       <div class="space-y-2 text-white/90">
+        <div class="flex justify-between">
+         <span>Total de Acertos:</span> <span class="font-bold" id="girls-total-correct">0</span>
+        </div>
+        <div class="flex justify-between">
+         <span>Total de Erros:</span> <span class="font-bold" id="girls-total-wrong">0</span>
+        </div>
+        <div class="flex justify-between">
+         <span>Tempo Médio:</span> <span class="font-bold" id="girls-avg-time">0s</span>
+        </div>
+       </div>
+      </div>
+      <div class="bg-blue-500/30 backdrop-blur-sm rounded-2xl p-5">
+       <h4 class="text-white font-bold text-lg mb-3 flex items-center gap-2"><span>👦</span> Estatísticas Meninos</h4>
+       <div class="space-y-2 text-white/90">
+        <div class="flex justify-between">
+         <span>Total de Acertos:</span> <span class="font-bold" id="boys-total-correct">0</span>
+        </div>
+        <div class="flex justify-between">
+         <span>Total de Erros:</span> <span class="font-bold" id="boys-total-wrong">0</span>
+        </div>
+        <div class="flex justify-between">
+         <span>Tempo Médio:</span> <span class="font-bold" id="boys-avg-time">0s</span>
+        </div>
+       </div>
+      </div>
+     </div><!-- Recent Players -->
+     <div class="bg-white/20 backdrop-blur-sm rounded-3xl p-6 animate-slide-up">
+      <h3 class="text-white font-bold text-xl mb-4">🏅 Últimos Participantes</h3>
+      <div id="recent-players" class="space-y-3 max-h-64 overflow-auto">
+       <p class="text-white/60 text-center py-4">Nenhum participante ainda</p>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    serverTimestamp,
+    getDocs,
+    query,
+    orderBy,
+    limit
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  // ✅ suas credenciais
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRFWSJxM_fMWTOFhwyKYE74vIkYgnCCE8",
+    authDomain: "quiz-c5b35.firebaseapp.com",
+    projectId: "quiz-c5b35",
+    storageBucket: "quiz-c5b35.firebasestorage.app",
+    messagingSenderId: "903229672353",
+    appId: "1:903229672353:web:8f87aa8f7b8fbeb90b99e0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // expõe pro script normal
+  window.__quizDb = db;
+  window.__quizFs = { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit };
+</script>
+  <script>
+    // Questions Data
+    const girlsQuestions = [
+      {
+        question: "Qual é a cor tradicionalmente associada às meninas?",
+        options: ["Azul", "Rosa", "Verde", "Amarelo"],
+        correct: 1
+      },
+      {
+        question: "Quem é a princesa da Disney que tem cabelos longos e dourados?",
+        options: ["Cinderela", "Ariel", "Rapunzel", "Bela"],
+        correct: 2
+      },
+      {
+        question: "Qual flor é conhecida como símbolo do amor?",
+        options: ["Margarida", "Girassol", "Rosa", "Tulipa"],
+        correct: 2
+      },
+      {
+        question: "Qual animal é frequentemente associado à elegância?",
+        options: ["Cachorro", "Gato", "Coelho", "Hamster"],
+        correct: 1
+      },
+      {
+        question: "Qual é o nome da boneca mais famosa do mundo?",
+        options: ["Polly", "Barbie", "Bratz", "Monster High"],
+        correct: 1
+      },
+      {
+        question: "Qual pedra preciosa é conhecida por ser rosa?",
+        options: ["Esmeralda", "Safira", "Rubi", "Quartzo Rosa"],
+        correct: 3
+      },
+      {
+        question: "Qual sobremesa é feita com frutas e creme?",
+        options: ["Brigadeiro", "Pavlova", "Brownie", "Pudim"],
+        correct: 1
+      },
+      {
+        question: "Qual é o país famoso pela Torre Eiffel?",
+        options: ["Itália", "Espanha", "França", "Inglaterra"],
+        correct: 2
+      }
+    ];
+
+    const boysQuestions = [
+      {
+        question: "Qual é a cor tradicionalmente associada aos meninos?",
+        options: ["Rosa", "Azul", "Roxo", "Laranja"],
+        correct: 1
+      },
+      {
+        question: "Qual super-herói usa um escudo redondo?",
+        options: ["Homem de Ferro", "Thor", "Capitão América", "Hulk"],
+        correct: 2
+      },
+      {
+        question: "Qual esporte usa uma bola laranja e cesta?",
+        options: ["Futebol", "Vôlei", "Basquete", "Tênis"],
+        correct: 2
+      },
+      {
+        question: "Qual é o animal mais rápido do mundo?",
+        options: ["Leão", "Guepardo", "Águia", "Tubarão"],
+        correct: 1
+      },
+      {
+        question: "Qual planeta é conhecido como planeta vermelho?",
+        options: ["Júpiter", "Saturno", "Marte", "Vênus"],
+        correct: 2
+      },
+      {
+        question: "Qual é o maior oceano do mundo?",
+        options: ["Atlântico", "Índico", "Ártico", "Pacífico"],
+        correct: 3
+      },
+      {
+        question: "Qual dinossauro é conhecido por ter braços pequenos?",
+        options: ["Triceratops", "T-Rex", "Velociraptor", "Pterodátilo"],
+        correct: 1
+      },
+      {
+        question: "Qual instrumento tem 6 cordas normalmente?",
+        options: ["Piano", "Violão", "Bateria", "Flauta"],
+        correct: 1
+      },
+      {
+        question: "Qual é o metal mais valioso?",
+        options: ["Prata", "Bronze", "Ouro", "Cobre"],
+        correct: 2
+      }
+    ];
+
+    // Game State
+    let currentGender = '';
+    let currentQuestions = [];
+    let currentQuestionIndex = 0;
+    let correctAnswers = 0;
+    let wrongAnswers = 0;
+    let timeLeft = 15;
+    let totalTimeUsed = 0;
+    let timerInterval = null;
+    let quizStartTime = null;
+    let allResults = [];
+    let isAnswering = false;
+
+    const QUESTION_TIME = 15;
+
+    async function saveQuizResultToFirestore(payload) {
+  try {
+    const db = window.__quizDb;
+    const f = window.__quizFs;
+    if (!db || !f) return;
+
+    await f.addDoc(f.collection(db, "quiz_results"), {
+      ...payload,
+      createdAt: f.serverTimestamp()
+    });
+  } catch (e) {
+    console.error("Erro ao salvar no Firestore:", e);
+  }
+}
+
+async function loadResultsFromFirestore() {
+  try {
+    const db = window.__quizDb;
+    const f = window.__quizFs;
+    if (!db || !f) return [];
+
+    const q = f.query(
+      f.collection(db, "quiz_results"),
+      f.orderBy("createdAt", "desc"),
+      f.limit(300)
+    );
+
+    const snap = await f.getDocs(q);
+    return snap.docs.map(d => d.data());
+  } catch (e) {
+    console.error("Erro ao buscar do Firestore:", e);
+    return [];
+  }
+}
+
+    // Default Config
+    const defaultConfig = {
+      main_title: "🎯 Quiz Challenge",
+      girls_button_text: "Para Meninas",
+      boys_button_text: "Para Meninos",
+      background_color: "#667eea",
+      accent_color: "#f093fb",
+      text_color: "#ffffff",
+      font_family: "Poppins"
+    };
+
+    // Data Handler
+    const dataHandler = {
+      onDataChanged(data) {
+        allResults = data;
+        if (document.getElementById('metrics-screen').classList.contains('hidden') === false) {
+          updateMetricsDisplay();
+        }
+      }
+    };
+
+    // Element Handler
+    const elementHandler = {
+      defaultConfig,
+      async onConfigChange(config) {
+        const mainTitle = document.getElementById('main-title');
+        const girlsBtnText = document.getElementById('girls-btn-text');
+        const boysBtnText = document.getElementById('boys-btn-text');
+        
+        if (mainTitle) mainTitle.textContent = config.main_title || defaultConfig.main_title;
+        if (girlsBtnText) girlsBtnText.textContent = config.girls_button_text || defaultConfig.girls_button_text;
+        if (boysBtnText) boysBtnText.textContent = config.boys_button_text || defaultConfig.boys_button_text;
+        
+        const fontFamily = config.font_family || defaultConfig.font_family;
+        document.body.style.fontFamily = `${fontFamily}, Poppins, sans-serif`;
+      },
+      mapToCapabilities(config) {
+        return {
+          recolorables: [
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: () => config.accent_color || defaultConfig.accent_color,
+              set: (value) => {
+                config.accent_color = value;
+                window.elementSdk.setConfig({ accent_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: undefined
+        };
+      },
+      mapToEditPanelValues(config) {
+        return new Map([
+          ["main_title", config.main_title || defaultConfig.main_title],
+          ["girls_button_text", config.girls_button_text || defaultConfig.girls_button_text],
+          ["boys_button_text", config.boys_button_text || defaultConfig.boys_button_text]
+        ]);
+      }
+    };
+
+    // Initialize SDKs
+    async function initApp() {
+      if (window.elementSdk) {
+        window.elementSdk.init(elementHandler);
+      }
+      
+      if (window.dataSdk) {
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+          console.error("Failed to initialize data SDK");
+        }
+      }
+    }
+
+    initApp();
+
+    // Navigation Functions
+    function showScreen(screenId) {
+      const screens = ['home-screen', 'quiz-screen', 'results-screen', 'metrics-screen'];
+      screens.forEach(id => {
+        const screen = document.getElementById(id);
+        if (id === screenId) {
+          screen.classList.remove('hidden');
+        } else {
+          screen.classList.add('hidden');
+        }
+      });
+    }
+
+    function goHome() {
+      clearInterval(timerInterval);
+      showScreen('home-screen');
+      resetQuiz();
+    }
+
+    function resetQuiz() {
+      currentQuestionIndex = 0;
+      correctAnswers = 0;
+      wrongAnswers = 0;
+      timeLeft = QUESTION_TIME;
+      totalTimeUsed = 0;
+      isAnswering = false;
+    }
+
+    // Quiz Functions
+    function startQuiz(gender) {
+      const playerName = document.getElementById('player-name').value.trim();
+      if (!playerName) {
+        const input = document.getElementById('player-name');
+        input.classList.add('ring-2', 'ring-red-400');
+        input.placeholder = 'Por favor, digite seu nome!';
+        setTimeout(() => {
+          input.classList.remove('ring-2', 'ring-red-400');
+          input.placeholder = 'Digite seu nome...';
+        }, 2000);
+        return;
+      }
+
+      currentGender = gender;
+      currentQuestions = gender === 'girls' ? [...girlsQuestions] : [...boysQuestions];
+      
+      // Shuffle questions
+      currentQuestions.sort(() => Math.random() - 0.5);
+      
+      resetQuiz();
+      quizStartTime = Date.now();
+      
+      const quizScreen = document.getElementById('quiz-screen');
+      quizScreen.className = `min-h-full w-full flex flex-col items-center p-4 ${gender === 'girls' ? 'girls-theme' : 'boys-theme'}`;
+      
+      showScreen('quiz-screen');
+      loadQuestion();
+      startTimer();
+    }
+
+    function loadQuestion() {
+      if (currentQuestionIndex >= currentQuestions.length) {
+        endQuiz();
+        return;
+      }
+
+      isAnswering = false;
+      const question = currentQuestions[currentQuestionIndex];
+      const totalQuestions = currentQuestions.length;
+      
+      document.getElementById('question-counter').textContent = `${currentQuestionIndex + 1} / ${totalQuestions}`;
+      document.getElementById('score-display').textContent = `✓ ${correctAnswers} | ✗ ${wrongAnswers}`;
+      document.getElementById('question-text').textContent = question.question;
+      document.getElementById('progress-bar').style.width = `${((currentQuestionIndex) / totalQuestions) * 100}%`;
+      
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+      
+      const optionLetters = ['A', 'B', 'C', 'D'];
+      const buttonColors = currentGender === 'girls' 
+        ? ['from-pink-400 to-pink-500', 'from-rose-400 to-rose-500', 'from-fuchsia-400 to-fuchsia-500', 'from-purple-400 to-purple-500']
+        : ['from-blue-400 to-blue-500', 'from-cyan-400 to-cyan-500', 'from-indigo-400 to-indigo-500', 'from-sky-400 to-sky-500'];
+      
+      question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.className = `option-btn w-full py-4 px-5 rounded-2xl font-semibold text-white bg-gradient-to-r ${buttonColors[index]} shadow-lg text-left flex items-center gap-3 border-2 border-white/20`;
+        button.innerHTML = `
+          <span class="w-8 h-8 flex items-center justify-center bg-white/20 rounded-full font-bold text-sm">${optionLetters[index]}</span>
+          <span class="flex-1">${option}</span>
+        `;
+        button.onclick = () => selectAnswer(index);
+        button.style.animationDelay = `${index * 0.1}s`;
+        button.classList.add('animate-slide-up');
+        optionsContainer.appendChild(button);
+      });
+      
+      // Reset timer
+      timeLeft = QUESTION_TIME;
+      updateTimerDisplay();
+    }
+
+    function selectAnswer(selectedIndex) {
+      if (isAnswering) return;
+      isAnswering = true;
+      
+      const question = currentQuestions[currentQuestionIndex];
+      const buttons = document.querySelectorAll('.option-btn');
+      
+      buttons.forEach(btn => btn.disabled = true);
+      
+      if (selectedIndex === question.correct) {
+        correctAnswers++;
+        buttons[selectedIndex].classList.add('correct-answer');
+      } else {
+        wrongAnswers++;
+        buttons[selectedIndex].classList.add('wrong-answer');
+        buttons[question.correct].classList.add('correct-answer');
+      }
+      
+      document.getElementById('score-display').textContent = `✓ ${correctAnswers} | ✗ ${wrongAnswers}`;
+      
+      setTimeout(() => {
+        currentQuestionIndex++;
+        loadQuestion();
+      }, 1200);
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (!isAnswering) {
+          timeLeft -= 0.1;
+          totalTimeUsed += 0.1;
+          updateTimerDisplay();
+          
+          if (timeLeft <= 0) {
+            timeOut();
+          }
+        }
+      }, 100);
+    }
+
+    function updateTimerDisplay() {
+      const timerText = document.getElementById('timer-text');
+      const timerRing = document.getElementById('timer-ring');
+      
+      const displayTime = Math.ceil(timeLeft);
+      timerText.textContent = displayTime;
+      
+      // Update ring
+      const circumference = 283;
+      const progress = timeLeft / QUESTION_TIME;
+      const offset = circumference * (1 - progress);
+      timerRing.style.strokeDashoffset = offset;
+      
+      // Update color based on time
+      let color;
+      if (progress > 0.5) {
+        color = '#4ade80'; // Green
+      } else if (progress > 0.25) {
+        color = '#facc15'; // Yellow
+      } else {
+        color = '#ef4444'; // Red
+      }
+      timerRing.style.stroke = color;
+    }
+
+    function timeOut() {
+      if (isAnswering) return;
+      isAnswering = true;
+      
+      wrongAnswers++;
+      const question = currentQuestions[currentQuestionIndex];
+      const buttons = document.querySelectorAll('.option-btn');
+      
+      buttons.forEach(btn => btn.disabled = true);
+      buttons[question.correct].classList.add('correct-answer');
+      
+      document.getElementById('score-display').textContent = `✓ ${correctAnswers} | ✗ ${wrongAnswers}`;
+      
+      setTimeout(() => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex >= currentQuestions.length) {
+          endQuiz();
+        } else {
+          loadQuestion();
+        }
+      }, 1200);
+    }
+
+    async function endQuiz() {
+      clearInterval(timerInterval);
+      
+      const playerName = document.getElementById('player-name').value.trim();
+      const totalQuestions = currentQuestions.length;
+      const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+      const timeUsed = Math.round(totalTimeUsed);
+      
+      // Save result
+   await saveQuizResultToFirestore({
+  name: playerName,
+  gender: currentGender,
+  correct_answers: correctAnswers,
+  wrong_answers: wrongAnswers,
+  total_time: timeUsed,
+  completed_at: new Date().toISOString()
+});
+      
+      // Show results
+      const resultsScreen = document.getElementById('results-screen');
+      resultsScreen.className = `min-h-full w-full flex flex-col items-center justify-center p-4 ${currentGender === 'girls' ? 'girls-theme' : 'boys-theme'}`;
+      
+      document.getElementById('result-name').textContent = `Jogador: ${playerName}`;
+      document.getElementById('result-correct').textContent = correctAnswers;
+      document.getElementById('result-wrong').textContent = wrongAnswers;
+      document.getElementById('result-percentage').textContent = `${percentage}%`;
+      document.getElementById('result-time').textContent = `${timeUsed}s`;
+      
+      // Set emoji based on performance
+      let emoji, title;
+      if (percentage >= 80) {
+        emoji = '🏆';
+        title = 'Incrível!';
+      } else if (percentage >= 60) {
+        emoji = '🌟';
+        title = 'Muito Bem!';
+      } else if (percentage >= 40) {
+        emoji = '👍';
+        title = 'Bom Trabalho!';
+      } else {
+        emoji = '💪';
+        title = 'Continue Tentando!';
+      }
+      
+      document.getElementById('result-emoji').textContent = emoji;
+      document.getElementById('result-title').textContent = title;
+      
+      showScreen('results-screen');
+    }
+
+async function showMetrics() {
+  const senha = prompt("Digite a senha para acessar as métricas:");
+
+  if (senha !== "123456") {
+    alert("Senha incorreta!");
+    return;
+  }
+
+  showScreen('metrics-screen');
+
+  if (typeof loadResultsFromFirestore === "function") {
+    allResults = await loadResultsFromFirestore();
+  }
+
+  updateMetricsDisplay();
+}
+
+    function updateMetricsDisplay() {
+      const girlsResults = allResults.filter(r => r.gender === 'girls');
+      const boysResults = allResults.filter(r => r.gender === 'boys');
+      
+      // Calculate percentages
+      let girlsAvgPercent = 0;
+      let boysAvgPercent = 0;
+      
+      if (girlsResults.length > 0) {
+        const girlsTotalCorrect = girlsResults.reduce((sum, r) => sum + (r.correct_answers || 0), 0);
+        const girlsTotalQuestions = girlsResults.length * 8;
+        girlsAvgPercent = Math.round((girlsTotalCorrect / girlsTotalQuestions) * 100);
+      }
+      
+      if (boysResults.length > 0) {
+        const boysTotalCorrect = boysResults.reduce((sum, r) => sum + (r.correct_answers || 0), 0);
+        const boysTotalQuestions = boysResults.length * 9;
+        boysAvgPercent = Math.round((boysTotalCorrect / boysTotalQuestions) * 100);
+      }
+      
+      // Update bars
+      document.getElementById('girls-percentage').textContent = `${girlsAvgPercent}%`;
+      document.getElementById('boys-percentage').textContent = `${boysAvgPercent}%`;
+      document.getElementById('girls-bar').style.height = `${Math.max(10, girlsAvgPercent * 1.5)}px`;
+      document.getElementById('boys-bar').style.height = `${Math.max(10, boysAvgPercent * 1.5)}px`;
+      document.getElementById('girls-count').textContent = `${girlsResults.length} participante${girlsResults.length !== 1 ? 's' : ''}`;
+      document.getElementById('boys-count').textContent = `${boysResults.length} participante${boysResults.length !== 1 ? 's' : ''}`;
+      
+      // Detailed stats
+      const girlsTotalCorrect = girlsResults.reduce((sum, r) => sum + (r.correct_answers || 0), 0);
+      const girlsTotalWrong = girlsResults.reduce((sum, r) => sum + (r.wrong_answers || 0), 0);
+      const girlsAvgTime = girlsResults.length > 0 
+        ? Math.round(girlsResults.reduce((sum, r) => sum + (r.total_time || 0), 0) / girlsResults.length)
+        : 0;
+      
+      const boysTotalCorrect = boysResults.reduce((sum, r) => sum + (r.correct_answers || 0), 0);
+      const boysTotalWrong = boysResults.reduce((sum, r) => sum + (r.wrong_answers || 0), 0);
+      const boysAvgTime = boysResults.length > 0 
+        ? Math.round(boysResults.reduce((sum, r) => sum + (r.total_time || 0), 0) / boysResults.length)
+        : 0;
+      
+      document.getElementById('girls-total-correct').textContent = girlsTotalCorrect;
+      document.getElementById('girls-total-wrong').textContent = girlsTotalWrong;
+      document.getElementById('girls-avg-time').textContent = `${girlsAvgTime}s`;
+      
+      document.getElementById('boys-total-correct').textContent = boysTotalCorrect;
+      document.getElementById('boys-total-wrong').textContent = boysTotalWrong;
+      document.getElementById('boys-avg-time').textContent = `${boysAvgTime}s`;
+      
+      // Recent players
+      const recentPlayers = document.getElementById('recent-players');
+      const sortedResults = [...allResults].sort((a, b) => 
+        new Date(b.completed_at || 0) - new Date(a.completed_at || 0)
+      ).slice(0, 10);
+      
+      if (sortedResults.length === 0) {
+        recentPlayers.innerHTML = '<p class="text-white/60 text-center py-4">Nenhum participante ainda</p>';
+      } else {
+        recentPlayers.innerHTML = sortedResults.map(r => {
+          const totalQ = r.gender === 'girls' ? 8 : 9;
+          const percent = Math.round(((r.correct_answers || 0) / totalQ) * 100);
+          const icon = r.gender === 'girls' ? '👧' : '👦';
+          const bgColor = r.gender === 'girls' ? 'bg-pink-500/30' : 'bg-blue-500/30';
+          
+          return `
+            <div class="${bgColor} rounded-xl p-3 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">${icon}</span>
+                <div>
+                  <div class="text-white font-semibold">${r.name || 'Anônimo'}</div>
+                  <div class="text-white/70 text-sm">${r.correct_answers || 0}/${totalQ} acertos • ${r.total_time || 0}s</div>
+                </div>
+              </div>
+              <div class="text-white font-bold text-lg">${percent}%</div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d6a2e4a953088b4',t:'MTc3MjU1NzA1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
